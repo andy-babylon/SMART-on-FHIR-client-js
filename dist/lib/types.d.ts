@@ -634,6 +634,11 @@ declare namespace fhirclient {
          *    this setting
          */
         pkceMode?: PkceMode;
+
+        /**
+         * TODO: Okta / Athena requires a nonce value which functions similarly to the state param
+         */
+        nonce?: string;
     }
 
     interface ReadyOptions {

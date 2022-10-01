@@ -2329,7 +2329,8 @@ async function authorize(env, params = {}) {
     scope = "",
     clientId,
     completeInTarget,
-    clientPrivateJwk
+    clientPrivateJwk,
+    nonce
   } = params;
   const storage = env.getStorage(); // For these three an url param takes precedence over inline option
 
@@ -2452,7 +2453,11 @@ async function authorize(env, params = {}) {
   } // build the redirect uri
 
 
-  const redirectParams = ["response_type=code", "client_id=" + encodeURIComponent(clientId || ""), "scope=" + encodeURIComponent(scope), "redirect_uri=" + encodeURIComponent(redirectUri), "aud=" + encodeURIComponent(serverUrl), "state=" + encodeURIComponent(stateKey)]; // also pass this in case of EHR launch
+  const redirectParams = ["response_type=code", "client_id=" + encodeURIComponent(clientId || ""), "scope=" + encodeURIComponent(scope), "redirect_uri=" + encodeURIComponent(redirectUri), "aud=" + encodeURIComponent(serverUrl), "state=" + encodeURIComponent(stateKey), // TODO: Okta/Athena require nonce to be set, and nonce and state serve similar functions.  In testing we set nonce=state
+  // TODO: nonce doesn't seem to exist in the lib, so this idea / approach needs to be implemented
+  "nonce=" + encodeURIComponent(stateKey), // TODO: Code-base seems to have the concept of PKCE code_challenge elsewhere; so hopefully this is just a wiring exercise.
+  // TODO: need to generate code_challenge and code_verifier dynamically
+  "code_challenge=" + encodeURIComponent("qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es"), "code_challenge_method=" + encodeURIComponent("S256")]; // also pass this in case of EHR launch
 
   if (launch) {
     redirectParams.push("launch=" + encodeURIComponent(launch));
@@ -2615,7 +2620,11 @@ async function ready(env, options = {}) {
 
   (0, lib_1.assert)(key, "No 'state' parameter found. Please (re)launch the app."); // Check if we have a previous state
 
-  let state = await Storage.get(key);
+  let state = await Storage.get(key); // TODO: code_challenge is sent in the /authorization call with code_verifier
+  // sent in the /token call (for Okta/Athena).  They are generated as a set, see
+  // https://developer.okta.com/docs/guides/implement-grant-type/authcodepkce/main/#create-the-proof-key-for-code-exchange
+
+  state.codeVerifier = "M25iVXpKU3puUjFaYWg3T1NDTDQtcW1ROUY5YXlwalNoc0hhakxifmZHag";
   const fullSessionStorageSupport = isBrowser() ? (0, lib_1.getPath)(env, "options.fullSessionStorageSupport") : true; // If we are in a popup window or an iframe and the authorization is
   // complete, send the location back to our opener and exit.
 
